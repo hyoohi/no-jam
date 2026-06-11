@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>금융 성향 테스트 게임</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #f1f3f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #app {
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            background: #ffffff;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            padding: 30px 20px;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .screen.active {
+            display: flex;
+        }
+        /* 메인 화면 */
+        .title-area {
+            text-align: center;
+            margin-top: 20%;
+        }
+        .title-badge {
+            background: #e8f2ff;
+            color: #1971c2;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        h1 {
+            font-size: 28px;
+            color: #212529;
+            line-height: 1.4;
+            font-weight: 800;
+        }
+        .main-desc {
+            color: #868e96;
+            font-size: 15px;
+            margin-top: 15px;
+            text-align: center;
+        }
+        .btn {
+            width: 100%;
+            background: #339af0;
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 4px 6px rgba(51, 154, 240, 0.2);
+            margin-bottom: 20px;
+        }
+        .btn:active {
+            background: #228be6;
+        }
+        /* 게임 화면 */
+        #game-screen {
+            padding: 0;
+            background: #e7f5ff;
+        }
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .game-ui {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            pointer-events: none;
+        }
+        .score-box {
+            background: rgba(255,255,255,0.9);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: #212529;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .game-guide {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            color: #495057;
+            font-weight: 500;
+            font-size: 14px;
+            pointer-events: none;
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+        /* 질문 화면 */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            width: 33%;
+            height: 100%;
+            background: #339af0;
+            transition: width 0.3s ease;
+        }
+        .question-box {
+            text-align: center;
+            margin: 40px 0;
+        }
+        .question-text {
+            font-size: 22px;
+            font-weight: 700;
+            color: #212529;
+            line-height: 1.4;
+        }
+        .options-area {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .option-btn {
+            width: 100%;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: left;
+            font-size: 16px;
+            color: #495057;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option-btn:active {
+            background: #e8f2ff;
+            border-color: #339af0;
+            color: #1971c2;
+        }
+        /* 결과 화면 */
+        #result-screen {
+            overflow-y: auto;
+            justify-content: flex-start;
+            gap: 25px;
+        }
+        .result-card {
+            background: #f8f9fa;
+            width: 100%;
+            border-radius: 24px;
+            padding: 30px 20px;
+            text-align: center;
+            margin-top: 10px;
+            border: 1px solid #e9ecef;
+        }
+        .result-type {
+            font-size: 15px;
+            color: #748ffc;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .result-title {
+            font-size: 24px;
+            color: #212529;
+            font-weight: 800;
+            margin: 10px 0 20px 0;
+        }
+        .result-score {
+            font-size: 14px;
+            color: #495057;
+            background: #eec;
+            background: #e8f7ff;
+            color: #1c7ed6;
+            padding: 6px 12px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .result-desc {
+            color: #495057;
+            font-size: 15px;
+            line-height: 1.6;
+            text-align: left;
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid #f1f3f5;
+        }
+        .tip-box {
+            width: 100%;
+            background: #fff9db;
+            border-radius: 16px;
+            padding: 20px;
+            border-left: 5px solid #fab005;
+            text-align: left;
+        }
+        .tip-title {
+            font-weight: bold;
+            color: #9c36b5;
+            color: #f59f00;
+            margin-bottom: 5px;
+            font-size: 15px;
+        }
+        .tip-text {
+            color: #495057;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="main-screen" class="screen active">
+        <div class="title-area">
+            <span class="title-badge">사내 공모전 출품작</span>
+            <h1>나의 투자 DNA<br>미니게임 테스트</h1>
+            <p class="main-desc">재미있는 캐치 게임과 성향 분석을 동시에!<br>내 금융 스타일을 확인해보세요.</p>
+        </div>
+        <button class="btn" onclick="startSetup()">테스트 시작하기</button>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="game-ui">
+            <div class="score-box">🪙 자산: <span id="score-display">0</span>만 원</div>
+            <div class="score-box" style="color: #fa5252;">⏱️ 시간: <span id="time-display">15</span>초</div>
+        </div>
+        <canvas id="game-canvas"></canvas>
+        <div class="game-guide">화면을 좌우로 드래그하거나 터치하여 이동하세요!</div>
+    </div>
+
+    <div id="question-screen" class="screen">
+        <div style="width: 100%;">
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+        </div>
+        <div class="question-box">
+            <p id="question-text" class="question-text">질문 텍스트</p>
+        </div>
+        <div class="options-area">
+            <button class="option-btn" onclick="selectOption(1)">선택지 1</button>
+            <button class="option-btn" onclick="selectOption(2)">선택지 2</button>
+        </div>
+        <div></div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <div class="result-card">
+            <p class="result-type">My Financial DNA</p>
+            <h2 id="result-title" class="result-title">결과 타이틀</h2>
+            <div id="result-score" class="result-score">획득 자산: 0만 원</div>
+            <p id="result-desc" class="result-desc">결과 설명</p>
+        </div>
+        <div class="tip-box">
+            <p class="tip-title">💡 맞춤형 금융 솔루션</p>
+            <p id="tip-text" class="tip-text">매칭 금융 상품 설명</p>
+        </div>
+        <button class="btn" onclick="restart()">다시 시도하기</button>
+    </div>
+</div>
+
+<script>
+    // 상태 관리
+    let score = 0;
+    let currentQ = 0;
+    let selectedAnswers = [];
+    let gameActive = false;
+
+    // 질문 데이터 (금융 성향 분석용)
+    const questions = [
+        {
+            q: "보너스 100만 원이 생겼다면 나의 선택은?",
+            a1: "당장 확실한 수익을 주는 우량주나 예금에 넣는다.",
+            a2: "조금 위험하더라도 고수익 기회가 있는 곳에 투자한다."
+        },
+        {
+            q: "투자한 주식이 10% 하락했을 때 나는?",
+            a1: "불안해서 잠이 안 온다. 일단 원금 손실을 막기 위해 매도 고민.",
+            a2: "오히려 싸게 살 기회! 추가 매수를 고려한다."
+        },
+        {
+            q: "금융 앱을 사용할 때 가장 중요하게 생각하는 것은?",
+            a1: "자산 현황을 한눈에 안전하게 보여주는 안정성과 깔끔함.",
+            a2: "나에게 큰 이득을 줄 수 있는 새로운 투자 정보와 이벤트."
+        }
+    ];
+
+    // 결과 데이터
+    const results = {
+        safeHigh: {
+            title: "든든한 성벽을 쌓는 '자산 수호자'",
+            desc: "게임에서 높은 자산을 모으셨군요! 현실에서도 안정적인 자산 관리를 선호하면서도 기회를 놓치지 않는 예리함을 가졌습니다. 리스크를 철저히 통제하며 꾸준한 우상향을 추구하는 안정형 엘리트입니다.",
+            tip: "원금 손실 우려가 적은 만기매칭형 채권형 펀드나 시중 은행의 고금리 정기예금 특판 상품을 추천합니다."
+        },
+        riskHigh: {
+            title: "트렌드를 선도하는 '금융 네비게이터'",
+            desc: "과감한 투자 성향과 뛰어난 게임 피지컬을 모두 갖추셨습니다. 변동성을 즐기며 시장의 트렌드를 빠르게 파악하는 능력이 탁월합니다. 높은 수익률을 위해 공격적인 포트폴리오를 구성하는 스타일입니다.",
+            tip: "성장 잠재력이 높은 테마형 ETF나 AI 기반의 해외 주식 소수점 적립식 투자 서비스를 추천합니다."
+        },
+        safeLow: {
+            title: "돌다리도 두드리는 '매칭 마스터'",
+            desc: "리스크를 기피하며 안전을 최우선으로 생각하는 성향입니다. 게임 점수보다는 원금의 보존과 심리적 안정감이 투자에서 가장 중요한 가치라고 믿는 든든한 저축형 스타일입니다.",
+            tip: "안정적인 이자 수익과 비과세 혜택이 결합된 저축성 보험이나 우량 국공채 상품을 추천합니다."
+        },
+        riskLow: {
+            title: "대박을 꿈꾸는 '지망생 불도저'",
+            desc: "마음은 뜨거운 공격형 투자자이지만, 아직 실전 자산 관리 경험이나 타이밍 포착이 조금 서툴 수 있습니다. 변동성 높은 시장에 관심이 많으므로 체계적인 분석이 동반되면 큰 성장이 기대됩니다.",
+            tip: "소액으로 투자의 감을 익힐 수 있는 모의투자 서비스나 전문가의 리포트가 제공되는 펀드 포트폴리오를 추천합니다."
+        }
+    };
+
+    // 화면 전환 함수
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    // 1. 게임 스크립트 (Canvas 기반)
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    let player = { x: 0, y: 0, width: 50, height: 50, speed: 7 };
+    let coins = [];
+    let gameTimer;
+    let timeLeft = 15;
+
+    function startSetup() {
+        showScreen('game-screen');
+        resizeCanvas();
+        initGame();
+    }
+
+    function resizeCanvas() {
+        const container = canvas.parentElement;
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+    }
+
+    function initGame() {
+        score = 0;
+        timeLeft = 15;
+        coins = [];
+        player.x = canvas.width / 2 - player.width / 2;
+        player.y = canvas.height - player.height - 40;
+        
+        document.getElementById('score-display').innerText = score;
+        document.getElementById('time-display').innerText = timeLeft;
+        
+        gameActive = true;
+        setupControls();
+        
+        // 게임 타이머
+        gameTimer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('time-display').innerText = timeLeft;
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }, 1000);
+
+        requestAnimationFrame(updateGame);
+    }
+
+    // 모바일 터치 및 드래그 조작 이벤트
+    function setupControls() {
+        let isDragging = false;
+
+        canvas.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            movePlayer(e.touches[0].clientX);
+        }, { passive: true });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            movePlayer(e.touches[0].clientX);
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', () => { isDragging = false; });
+
+        // 마우스 호환 (테스트용)
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            movePlayer(e.clientX);
+        });
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) movePlayer(e.clientX);
+        });
+        canvas.addEventListener('mouseup', () => { isDragging = false; });
+    }
+
+    function movePlayer(clientX) {
+        const rect = canvas.getBoundingClientRect();
+        const relativeX = clientX - rect.left;
+        player.x = relativeX - player.width / 2;
+        
+        // 화면 이탈 방지
+        if (player.x < 0) player.x = 0;
+        if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
+    }
+
+    function updateGame() {
+        if (!gameActive) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 플레이어 캐릭터 그리기 (금융 주머니 컨셉)
+        ctx.fillStyle = '#339af0';
+        ctx.beginPath();
+        ctx.roundRect(player.x, player.y, player.width, player.height, 12);
+        ctx.fill();
+        
+        // 눈 장식 추가 (귀여움 요소)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(player.x + 12, player.y + 15, 6, 10);
+        ctx.fillRect(player.x + 32, player.y + 15, 6, 10);
+
+        // 코인 생성 확률
+        if (Math.random() < 0.04) {
+            coins.push({
+                x: Math.random() * (canvas.width - 30),
+                y: -30,
+                size: 24,
+                speed: 4 + Math.random() * 4
+            });
+        }
+
+        // 코인 업데이트 및 충돌 검사
+        for (let i = coins.length - 1; i >= 0; i--) {
+            let c = coins[i];
+            c.y += c.speed;
+
+            // 코인 그리기 (금화 모양)
+            ctx.fillStyle = '#fab005';
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, c.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#fff3bf';
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, c.size / 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 충돌 감지
+            if (c.y + c.size/2 >= player.y && 
+                c.y - c.size/2 <= player.y + player.height &&
+                c.x + c.size/2 >= player.x && 
+                c.x - c.size/2 <= player.x + player.width) {
+                
+                coins.splice(i, 1);
+                score += 100;
+                document.getElementById('score-display').innerText = score;
+                continue;
+            }
+
+            // 바닥에 닿으면 삭제
+            if (c.y > canvas.height) {
+                coins.splice(i, 1);
+            }
+        }
+
+        requestAnimationFrame(updateGame);
+    }
+
+    function endGame() {
+        gameActive = false;
+        clearInterval(gameTimer);
+        startQuestions();
+    }
+
+    // 2. 질문 스크립트
+    function startQuestions() {
+        currentQ = 0;
+        selectedAnswers = [];
+        showScreen('question-screen');
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        const progress = ((currentQ + 1) / questions.length) * 100;
+        document.getElementById('progress-fill').style.width = `${progress}%`;
+
+        const qData = questions[currentQ];
+        document.getElementById('question-text').innerText = qData.q;
+        
+        const options = document.querySelectorAll('.option-btn');
+        options[0].innerText = qData.a1;
+        options[1].innerText = qData.a2;
+    }
+
+    function selectOption(ans) {
+        selectedAnswers.push(ans);
+        currentQ++;
+        if (currentQ < questions.length) {
+            renderQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    // 3. 결과 스크립트
+    function showResult() {
+        showScreen('result-screen');
+        
+        // 과반수 선택지 기준 성향 산출 (1: 안전, 2: 공격)
+        const safeCount = selectedAnswers.filter(a => a === 1).length;
+        const isSafe = safeCount >= 2;
+        const isHighGold = score >= 1000;
+
+        let finalResult;
+        if (isSafe && isHighGold) finalResult = results.safeHigh;
+        else if (!isSafe && isHighGold) finalResult = results.riskHigh;
+        else if (isSafe && !isHighGold) finalResult = results.safeLow;
+        else finalResult = results.riskLow;
+
+        document.getElementById('result-title').innerText = finalResult.title;
+        document.getElementById('result-score').innerText = `모은 가상 자산: ${score}만 원`;
+        document.getElementById('result-desc').innerText = finalResult.desc;
+        document.getElementById('tip-text').innerText = finalResult.tip;
+    }
+
+    function restart() {
+        showScreen('main-screen');
+    }
+</script>
+</body>
+</html>
